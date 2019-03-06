@@ -183,12 +183,12 @@ export default class Renderer {
       frame: this.frameNum,
       time: this.time,
       fps: this.fps,
-      bass: this.audioLevels.bass,
-      bass_att: this.audioLevels.bass_att,
-      mid: this.audioLevels.mid,
-      mid_att: this.audioLevels.mid_att,
-      treb: this.audioLevels.treb,
-      treb_att: this.audioLevels.treb_att,
+      bass: this.audioLevels.val[0],
+      bass_att: this.audioLevels.att[0],
+      mid: this.audioLevels.val[1],
+      mid_att: this.audioLevels.att[1],
+      treb: this.audioLevels.val[2],
+      treb_att: this.audioLevels.att[2],
     };
     const params = {
       pixelRatio: this.pixelRatio,
@@ -622,27 +622,33 @@ export default class Renderer {
     this.calcTimeAndFPS(elapsedTime);
     this.frameNum += 1;
 
-    if (audioLevels) {
-      this.audio.updateAudio(
-        audioLevels.timeByteArray,
-        audioLevels.timeByteArrayL,
-        audioLevels.timeByteArrayR
-      );
-    } else {
+    if (process.env.NODE_ENV !== 'production') {
+      if (audioLevels) {
+        this.audio.updateAudio(
+          audioLevels.timeByteArray,
+          audioLevels.timeByteArrayL,
+          audioLevels.timeByteArrayR
+        );
+      } else {
+        this.audio.sampleAudio();
+      }
+    }
+    if (process.env.NODE_ENV === 'production') {
       this.audio.sampleAudio();
     }
+
     this.audioLevels.updateAudioLevels(this.fps, this.frameNum);
 
     const globalVars = {
       frame: this.frameNum,
       time: this.time,
       fps: this.fps,
-      bass: this.audioLevels.bass,
-      bass_att: this.audioLevels.bass_att,
-      mid: this.audioLevels.mid,
-      mid_att: this.audioLevels.mid_att,
-      treb: this.audioLevels.treb,
-      treb_att: this.audioLevels.treb_att,
+      bass: this.audioLevels.val[0],
+      bass_att: this.audioLevels.att[0],
+      mid: this.audioLevels.val[1],
+      mid_att: this.audioLevels.att[1],
+      treb: this.audioLevels.val[2],
+      treb_att: this.audioLevels.att[2],
       meshx: this.mesh_width,
       meshy: this.mesh_height,
       aspectx: this.invAspectx,

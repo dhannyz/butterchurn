@@ -14,26 +14,7 @@ export default class AudioLevels {
     this.avg.fill(1);
     this.longAvg.fill(1);
   }
-  /* eslint-disable camelcase */
-  get bass () {
-    return this.val[0];
-  }
-  get bass_att () {
-    return this.att[0];
-  }
-  get mid () {
-    return this.val[1];
-  }
-  get mid_att () {
-    return this.att[1];
-  }
-  get treb () {
-    return this.val[2];
-  }
-  get treb_att () {
-    return this.att[2];
-  }
-  /* eslint-enable camelcase */
+
   static isFiniteNumber (num) {
     return (Number.isFinite(num) && !Number.isNaN(num));
   }
@@ -54,9 +35,8 @@ export default class AudioLevels {
         effectiveFPS = 120;
       }
 
-      // Clear for next loop
-      this.imm.fill(0);
       for (let i = 0; i < 3; i++) {
+        this.imm[i] = 0; // Clear for next loop
         for (let j = this.starts[i]; j < this.stops[i]; j++) {
           this.imm[i] += this.audio.freqArray[j];
         }
@@ -80,7 +60,7 @@ export default class AudioLevels {
         rate = AudioLevels.adjustRateToFPS(rate, 30.0, effectiveFPS);
         this.longAvg[i] = (this.longAvg[i] * rate) + (this.imm[i] * (1 - rate));
 
-        if (Math.abs(this.longAvg[i]) < 0.001) {
+        if (this.longAvg[i] < 0.001) {
           this.val[i] = 1.0;
           this.att[i] = 1.0;
         } else {
