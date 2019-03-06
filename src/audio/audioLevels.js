@@ -1,8 +1,10 @@
 export default class AudioLevels {
   constructor (audio) {
     this.audio = audio;
-    this.starts = new Uint8Array([0, 85, 170]);
-    this.stops = new Uint8Array([85, 170, 255]);
+    // this.starts = new Uint8Array([0, 85, 170]); // Original
+    // this.stops = new Uint8Array([85, 170, 255]);
+    this.starts = new Uint8Array([0, 8, 72]);
+    this.stops = new Uint8Array([8, 72, 255]);
 
     this.val = new Float32Array(3);
     this.imm = new Float32Array(3);
