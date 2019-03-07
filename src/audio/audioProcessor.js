@@ -5,7 +5,7 @@ export default class AudioProcessor {
     this.numSamps = 512;
     this.fftSize = this.numSamps * 2;
 
-    this.fft = new FFT(this.fftSize, 512);
+    this.fft = new FFT(this.fftSize, 512, false);
 
     if (context) {
       this.audioContext = context;
@@ -46,14 +46,42 @@ export default class AudioProcessor {
       // Undersampled from this.fftSize to this.numSamps
       this.timeArrayL = new Int8Array(this.numSamps);
       this.timeArrayR = new Int8Array(this.numSamps);
+
+
+      this.freqArray = new Float32Array(this.numSamps);
+      this.freqArrayL = new Float32Array(this.numSamps);
+      this.freqArrayR = new Float32Array(this.numSamps);
     }
   }
-
+  /* eslint-disable no-bitwise */
   sampleAudio () {
     this.analyser.getByteTimeDomainData(this.timeByteArray);
     this.analyserL.getByteTimeDomainData(this.timeByteArrayL);
     this.analyserR.getByteTimeDomainData(this.timeByteArrayR);
-    this.processAudio();
+
+    this.analyser.getFloatFrequencyData(this.freqArray);
+    this.analyserL.getFloatFrequencyData(this.freqArrayL);
+    this.analyserR.getFloatFrequencyData(this.freqArrayR);
+
+    // Long Live Loop Fusion
+    for (let i = 0, j = 0; i < this.fftSize; i++) {
+      // Shift Unsigned to Signed about 0
+      this.timeArray[i] = this.timeByteArray[i] - 128;
+      this.timeByteArraySignedL[i] = this.timeByteArrayL[i] - 128;
+      this.timeByteArraySignedR[i] = this.timeByteArrayR[i] - 128;
+
+      // Undersampled
+      if (i & 2) { // Equivalent to i % 2
+        this.timeArrayL[j] = this.timeByteArraySignedL[i];
+        this.timeArrayR[j] = this.timeByteArraySignedR[i];
+
+        // dB to linear + unscale
+        this.freqArray[j] = (10 ** (0.05 * this.freqArray[j])) * this.fftSize;
+        this.freqArrayL[j] = (10 ** (0.05 * this.freqArrayL[j])) * this.fftSize;
+        this.freqArrayR[j] = (10 ** (0.05 * this.freqArrayR[j])) * this.fftSize;
+        j += 1;
+      }
+    }
   }
   updateAudio (timeByteArray, timeByteArrayL, timeByteArrayR) {
     this.timeByteArray.set(timeByteArray);
@@ -61,7 +89,7 @@ export default class AudioProcessor {
     this.timeByteArrayR.set(timeByteArrayR);
     this.processAudio();
   }
-  /* eslint-disable no-bitwise */
+
   processAudio () {
     for (let i = 0, j = 0; i < this.fftSize; i++) {
       // Shift Unsigned to Signed about 0

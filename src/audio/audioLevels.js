@@ -1,10 +1,23 @@
 export default class AudioLevels {
   constructor (audio) {
     this.audio = audio;
-    // this.starts = new Uint8Array([0, 85, 170]); // Original
-    // this.stops = new Uint8Array([85, 170, 255]);
-    this.starts = new Uint8Array([0, 8, 72]);
-    this.stops = new Uint8Array([8, 72, 255]);
+
+    let sampleRate;
+    if (this.audio.audioContext) {
+      sampleRate = this.audio.audioContext.sampleRate;
+    } else {
+      sampleRate = 44100;
+    }
+
+    const bucketHz = sampleRate / this.audio.fftSize;
+
+    const bassLow = Math.clamp(Math.round(20 / bucketHz) - 1, 0, this.audio.numSamps - 1);
+    const bassHigh = Math.clamp(Math.round(320 / bucketHz) - 1, 0, this.audio.numSamps - 1);
+    const midHigh = Math.clamp(Math.round(2800 / bucketHz) - 1, 0, this.audio.numSamps - 1);
+    const trebHigh = Math.clamp(Math.round(11025 / bucketHz) - 1, 0, this.audio.numSamps - 1);
+
+    this.starts = [bassLow, bassHigh, midHigh];
+    this.stops = [bassHigh, midHigh, trebHigh];
 
     this.val = new Float32Array(3);
     this.imm = new Float32Array(3);
