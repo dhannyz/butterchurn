@@ -44,7 +44,6 @@ export default class AudioProcessor {
     this.timeByteArraySignedL = new Int8Array(this.fftSize);
     this.timeByteArraySignedR = new Int8Array(this.fftSize);
 
-<<<<<<< HEAD
       // Undersampled from this.fftSize to this.numSamps
       this.timeArrayL = new Int8Array(this.numSamps);
       this.timeArrayR = new Int8Array(this.numSamps);
@@ -54,11 +53,6 @@ export default class AudioProcessor {
       this.freqArrayL = new Float32Array(this.numSamps);
       this.freqArrayR = new Float32Array(this.numSamps);
     }
-=======
-    // Undersampled from this.fftSize to this.numSamps
-    this.timeArrayL = new Int8Array(this.numSamps);
-    this.timeArrayR = new Int8Array(this.numSamps);
->>>>>>> a23119285ef0815788e89acb6dbe5d64422a8644
   }
   /* eslint-disable no-bitwise */
   sampleAudio () {
