@@ -1,6 +1,6 @@
 {
   "name": "butterchurn",
-  "version": "2.6.3",
+  "version": "2.6.6",
   "description": "Butterchurn is a WebGL implementation of the Milkdrop Visualizer",
   "main": "lib/butterchurn.js",
   "unpkg": "lib/butterchurn.js",
@@ -33,11 +33,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",
-    "@babel/plugin-transform-runtime": "^7.0.0",
     "@babel/preset-env": "^7.0.0",
     "babel-eslint": "^9.0.0",
     "babel-loader": "^8.0.0",
-    "babel-plugin-add-module-exports": "^0.2.1",
     "eslint": "^5.15.1",
     "eslint-config-airbnb": "^16.1.0",
     "eslint-loader": "^2.1.2",
