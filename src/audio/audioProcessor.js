@@ -60,15 +60,13 @@ export default class AudioProcessor {
     this.analyserR.getByteTimeDomainData(this.timeByteArrayR);
 
     this.analyser.getFloatFrequencyData(this.freqArray);
-    this.analyserL.getFloatFrequencyData(this.freqArrayL);
-    this.analyserR.getFloatFrequencyData(this.freqArrayR);
 
     // Long Live Loop Fusion
     for (let i = 0, j = 0; i < this.fftSize; i++) {
       // Shift Unsigned to Signed about 0
-      this.timeArray[i] = this.timeByteArray[i] - 128;
-      this.timeByteArraySignedL[i] = this.timeByteArrayL[i] - 128;
-      this.timeByteArraySignedR[i] = this.timeByteArrayR[i] - 128;
+
+      this.timeByteArraySignedL[i] = (this.timeByteArrayL[i] ^ 128 ) - 128;
+      this.timeByteArraySignedR[i] = (this.timeByteArrayR[i] ^ 128 ) - 128;
 
       // Undersampled
       if (i & 2) { // Equivalent to i % 2
@@ -76,11 +74,11 @@ export default class AudioProcessor {
         this.timeArrayR[j] = this.timeByteArraySignedR[i];
 
         // dB to linear + unscale
-        this.freqArray[j] = (10 ** (0.05 * this.freqArray[j])) * this.fftSize;
-        this.freqArrayL[j] = (10 ** (0.05 * this.freqArrayL[j])) * this.fftSize;
-        this.freqArrayR[j] = (10 ** (0.05 * this.freqArrayR[j])) * this.fftSize;
+        this.freqArray[j] = 10 ** (0.05 * this.freqArray[j]);
         j += 1;
       }
+      this.freqArrayL.set(this.fft.timeToFrequencyDomain(this.timeByteArraySignedL));
+      this.freqArrayr.set(this.fft.timeToFrequencyDomain(this.timeByteArraySignedR));
     }
   }
 
