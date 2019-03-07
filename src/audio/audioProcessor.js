@@ -88,6 +88,7 @@ export default class AudioProcessor {
     this.timeByteArray.set(timeByteArray);
     this.timeByteArrayL.set(timeByteArrayL);
     this.timeByteArrayR.set(timeByteArrayR);
+
     for (let i = 0, j = 0; i < this.fftSize; i++) {
       // Shift Unsigned to Signed about 0
       this.timeArray[i] = this.timeByteArray[i] - 128;
