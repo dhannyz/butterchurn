@@ -5,6 +5,13 @@ export default class FFT {
     this.equalize = equalize;
     this.NFREQ = samplesOut * 2;
 
+    this.sqrt = Math.sqrt;
+
+    this.real = new Float32Array(this.NFREQ);
+    this.imag = new Float32Array(this.NFREQ);
+    this.blank = new Float32Array(this.NFREQ);
+    this.output = new Float32Array(this.samplesOut);
+
     if (this.equalize) {
       this.initEqualizeTable();
     }
@@ -69,17 +76,14 @@ export default class FFT {
   }
 
   timeToFrequencyDomain (waveDataIn) {
-    const real = new Float32Array(this.NFREQ);
-    const imag = new Float32Array(this.NFREQ);
+    this.real.set(this.blank);
+    this.imag.set(this.blank);
 
     for (let i = 0; i < this.NFREQ; i++) {
       const idx = this.bitrevtable[i];
       if (idx < this.samplesIn) {
-        real[i] = waveDataIn[idx];
-      } else {
-        real[i] = 0;
+        this.real[i] = waveDataIn[idx];
       }
-      imag[i] = 0;
     }
 
     let dftsize = 2;
@@ -94,12 +98,12 @@ export default class FFT {
       for (let m = 0; m < hdftsize; m++) {
         for (let i = m; i < this.NFREQ; i += dftsize) {
           const j = i + hdftsize;
-          const tempr = (wr * real[j]) - (wi * imag[j]);
-          const tempi = (wr * imag[j]) + (wi * real[j]);
-          real[j] = real[i] - tempr;
-          imag[j] = imag[i] - tempi;
-          real[i] += tempr;
-          imag[i] += tempi;
+          const tempr = (wr * this.real[j]) - (wi * this.imag[j]);
+          const tempi = (wr * this.imag[j]) + (wi * this.real[j]);
+          this.real[j] = this.real[i] - tempr;
+          this.imag[j] = this.imag[i] - tempi;
+          this.real[i] += tempr;
+          this.imag[i] += tempi;
         }
 
         const wtemp = wr;
@@ -111,19 +115,18 @@ export default class FFT {
       t += 1;
     }
 
-    const spectralDataOut = new Float32Array(this.samplesOut);
     if (this.equalize) {
       for (let i = 0; i < this.samplesOut; i++) {
-        spectralDataOut[i] = this.equalizeArr[i] *
-                             Math.sqrt((real[i] * real[i]) + (imag[i] * imag[i]));
+        this.output[i] = this.equalizeArr[i] *
+                             this.sqrt((this.real[i] ** 2) + (this.imag[i] ** 2));
       }
     } else {
       for (let i = 0; i < this.samplesOut; i++) {
-        spectralDataOut[i] = Math.sqrt((real[i] * real[i]) + (imag[i] * imag[i]));
+        this.output[i] = this.sqrt((this.real[i] ** 2) + (this.imag[i] ** 2));
       }
     }
 
-    return spectralDataOut;
+    return this.output; // Could merge into the processor
   }
 /* eslint-enable no-bitwise */
 }

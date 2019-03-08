@@ -14,6 +14,8 @@ export default class AudioProcessor {
       this.analyser = context.createAnalyser();
       this.analyser.smoothingTimeConstant = 0.0;
       this.analyser.fftSize = this.fftSize;
+      this.analyser.minDecibels = -100;
+      this.analyser.maxDecibels = 0;
 
       this.audible.connect(this.analyser);
 
@@ -21,10 +23,14 @@ export default class AudioProcessor {
       this.analyserL = context.createAnalyser();
       this.analyserL.smoothingTimeConstant = 0.0;
       this.analyserL.fftSize = this.fftSize;
+      this.analyserL.minDecibels = -100;
+      this.analyserL.maxDecibels = 0;
 
       this.analyserR = context.createAnalyser();
       this.analyserR.smoothingTimeConstant = 0.0;
       this.analyserR.fftSize = this.fftSize;
+      this.analyserR.minDecibels = -100;
+      this.analyserR.maxDecibels = 0;
 
       this.splitter = context.createChannelSplitter(2);
 
@@ -47,10 +53,15 @@ export default class AudioProcessor {
       this.timeArrayL = new Int8Array(this.numSamps);
       this.timeArrayR = new Int8Array(this.numSamps);
 
-
       this.freqArray = new Float32Array(this.numSamps);
       this.freqArrayL = new Float32Array(this.numSamps);
       this.freqArrayR = new Float32Array(this.numSamps);
+
+      this.equaliser = new Float32Array(this.numSamps);
+      const invHalfNFREQ = 1.0 / this.numSamps;
+      for (let i = 0; i < this.numSamps; i++) {
+        this.equaliser[i] = -this.fftSize * Math.log((this.numSamps - i) * invHalfNFREQ);
+      }
     }
   }
   /* eslint-disable no-bitwise */
@@ -60,26 +71,31 @@ export default class AudioProcessor {
     this.analyserR.getByteTimeDomainData(this.timeByteArrayR);
 
     this.analyser.getFloatFrequencyData(this.freqArray);
+    this.analyserL.getFloatFrequencyData(this.freqArrayL);
+    this.analyserR.getFloatFrequencyData(this.freqArrayR);
 
     // Long Live Loop Fusion
     for (let i = 0, j = 0; i < this.fftSize; i++) {
       // Shift Unsigned to Signed about 0
 
-      this.timeByteArraySignedL[i] = (this.timeByteArrayL[i] ^ 128 ) - 128;
-      this.timeByteArraySignedR[i] = (this.timeByteArrayR[i] ^ 128 ) - 128;
+      this.timeByteArraySignedL[i] = this.timeByteArrayL[i] - 128;
+      this.timeByteArraySignedR[i] = this.timeByteArrayR[i] - 128;
 
       // Undersampled
       if (i & 2) { // Equivalent to i % 2
         this.timeArrayL[j] = this.timeByteArraySignedL[i];
         this.timeArrayR[j] = this.timeByteArraySignedR[i];
 
-        // dB to linear + unscale
-        this.freqArray[j] = 10 ** (0.05 * this.freqArray[j]);
+        // dB to linear + equalise
+        this.freqArray[j] = (10 ** (0.05 * this.freqArray[j]));
+        this.freqArrayL[j] = (10 ** (0.05 * this.freqArrayL[j])) * this.equaliser[j];
+        this.freqArrayR[j] = (10 ** (0.05 * this.freqArrayR[j])) * this.equaliser[j];
         j += 1;
       }
-      this.freqArrayL.set(this.fft.timeToFrequencyDomain(this.timeByteArraySignedL));
-      this.freqArrayr.set(this.fft.timeToFrequencyDomain(this.timeByteArraySignedR));
     }
+    this.freqArray[0] = 0;
+    this.freqArrayL[0] = 0;
+    this.freqArrayR[0] = 0;
   }
 
   updateAudio (timeByteArray, timeByteArrayL, timeByteArrayR) {
