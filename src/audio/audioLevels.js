@@ -1,97 +1,74 @@
 export default class AudioLevels {
   constructor (audio) {
+    // Re-scope
     this.audio = audio;
+    this.freqArray = this.audio.freqArray;
 
-    let sampleRate;
+    // Set up beat detection bins
+    let sampleRate = 44100;
     if (this.audio.audioContext) {
       sampleRate = this.audio.audioContext.sampleRate;
-    } else {
-      sampleRate = 44100;
     }
-
     const bucketHz = sampleRate / this.audio.fftSize;
-
     const bassLow = Math.clamp(Math.ceil(20 / bucketHz), 1, this.audio.numSamps - 1);
-    const bassHigh = Math.clamp(Math.round(320 / bucketHz), 1, this.audio.numSamps - 1);
-    const midHigh = Math.clamp(Math.round(2800 / bucketHz), 1, this.audio.numSamps - 1);
-    const trebHigh = Math.clamp(Math.round(11025 / bucketHz), 1, this.audio.numSamps - 1);
-
+    const bassHigh = Math.clamp(Math.ceil(320 / bucketHz), 1, this.audio.numSamps - 1);
+    const midHigh = Math.clamp(Math.ceil(2800 / bucketHz), 1, this.audio.numSamps - 1);
+    const trebHigh = Math.clamp(Math.ceil(11025 / bucketHz), 1, this.audio.numSamps - 1);
     this.starts = [bassLow, bassHigh, midHigh];
     this.stops = [bassHigh, midHigh, trebHigh];
 
+    // Initialise Arrays
     this.val = new Float32Array(3);
-    this.imm = new Float32Array(3);
     this.att = new Float32Array(3);
     this.avg = new Float32Array(3);
     this.longAvg = new Float32Array(3);
 
+    // Set sane starting values
     this.att.fill(1);
     this.avg.fill(1);
     this.longAvg.fill(1);
   }
 
-  static isFiniteNumber (num) {
-    return (Number.isFinite(num) && !Number.isNaN(num));
-  }
-
-  static adjustRateToFPS (rate, baseFPS, FPS) {
-    const ratePerSecond = rate ** baseFPS;
-    const ratePerFrame = ratePerSecond ** (1.0 / FPS);
-
-    return ratePerFrame;
-  }
-
   updateAudioLevels (fps, frame) {
-    if (this.audio.freqArray.length > 0) {
-      // Rescope; ~4% performance gain
-      const val = this.val;
-      const att = this.att;
-      const avg = this.avg;
-      const longAvg = this.longAvg;
-      const imm = this.imm;
-      const starts = this.starts;
-      const stops = this.stops;
-      const freqArray = this.audio.freqArray;
-
-      let effectiveFPS = fps;
-      if (!AudioLevels.isFiniteNumber(effectiveFPS) || effectiveFPS < 15) {
-        effectiveFPS = 15;
-      } else if (effectiveFPS > 144) {
-        effectiveFPS = 144;
+    if (this.freqArray.length > 0) {
+      let rateExponent; // Used for FPS corrections
+      if (!Number.isFinite(fps) || fps < 15) {
+        rateExponent = 2; // 30/15
+      } else if (fps > 144) {
+        rateExponent = 0.2083; // 30/144
+      } else {
+        rateExponent = 30 / fps;
       }
 
-      for (let i = 0; i < 3; i++) {
-        imm[i] = 0; // Clear for next loop
-        for (let j = starts[i]; j < stops[i]; j++) {
-          imm[i] += freqArray[j];
-        }
-      }
 
       for (let i = 0; i < 3; i++) {
         let rate;
-        if (imm[i] > avg[i]) {
-          rate = 0.2;
-        } else {
-          rate = 0.5;
+        let imm = 0;
+        // Sum the range
+        for (let j = this.starts[i]; j < this.stops[i]; j++) {
+          imm += this.freqArray[j];
         }
-        rate = AudioLevels.adjustRateToFPS(rate, 30.0, effectiveFPS);
-        avg[i] = (avg[i] * rate) + (imm[i] * (1 - rate));
+
+        if (imm > this.avg[i]) {
+          rate = 0.2 ** rateExponent;
+        } else {
+          rate = 0.5 ** rateExponent;
+        }
+        this.avg[i] = (this.avg[i] * rate) + (imm * (1 - rate));
 
         if (frame < 50) {
-          rate = 0.9;
+          rate = 0.9 ** rateExponent;
         } else {
-          rate = 0.992;
+          rate = 0.992 ** rateExponent;
         }
-        rate = AudioLevels.adjustRateToFPS(rate, 30.0, effectiveFPS);
-        longAvg[i] = (longAvg[i] * rate) + (imm[i] * (1 - rate));
+        this.longAvg[i] = (this.longAvg[i] * rate) + (imm * (1 - rate));
 
-        if (longAvg[i] < 0.001) {
-          val[i] = 1.0;
-          att[i] = 1.0;
+        if (this.longAvg[i] < 0.001) {
+          this.val[i] = 1.0;
+          this.att[i] = 1.0;
         } else {
-          // dB to linear
-          val[i] = imm[i] / longAvg[i];
-          att[i] = avg[i] / longAvg[i];
+          this.val[i] = imm / this.longAvg[i];
+          this.att[i] = this.avg[i] / this.longAvg[i];
         }
       }
     }

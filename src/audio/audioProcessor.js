@@ -66,38 +66,28 @@ export default class AudioProcessor {
   }
   /* eslint-disable no-bitwise */
   sampleAudio () {
-    // Scope for Speedup
-    const timeByteArray = this.timeByteArray;
-    const timeByteArrayL = this.timeByteArrayL;
-    const timeByteArrayR = this.timeByteArrayR;
-    const timeArrayL = this.timeArrayL;
-    const timeArrayR = this.timeArrayR;
-    const freqArray = this.freqArray;
-    const freqArrayL = this.freqArrayL;
-    const freqArrayR = this.freqArrayL;
-    const equaliser = this.equaliser;
+    this.analyser.getByteTimeDomainData(this.timeByteArray);
+    this.analyserL.getByteTimeDomainData(this.timeByteArrayL);
+    this.analyserR.getByteTimeDomainData(this.timeByteArrayR);
 
-    this.analyser.getByteTimeDomainData(timeByteArray);
-    this.analyserL.getByteTimeDomainData(timeByteArrayL);
-    this.analyserR.getByteTimeDomainData(timeByteArrayR);
-
-    this.analyser.getFloatFrequencyData(freqArray);
-    this.analyserL.getFloatFrequencyData(freqArrayL);
-    this.analyserR.getFloatFrequencyData(freqArrayR);
+    this.analyser.getFloatFrequencyData(this.freqArray);
+    this.analyserL.getFloatFrequencyData(this.freqArrayL);
+    this.analyserR.getFloatFrequencyData(this.freqArrayR);
 
     for (let i = 0, j = 1; i < this.numSamps; i++) {
+      const eq = this.equaliser[i];
       // Undersampled
-      timeArrayL[i] = timeByteArrayL[j] - 128;
-      timeArrayR[i] = timeByteArrayR[j] - 128;
+      this.timeArrayL[i] = this.timeByteArrayL[j] - 128;
+      this.timeArrayR[i] = this.timeByteArrayR[j] - 128;
       // dB to linear + equalise
-      freqArray[i] = (10 ** (0.05 * freqArray[i]));
-      freqArrayL[i] = (10 ** (0.05 * freqArrayL[i])) * equaliser[i];
-      freqArrayR[i] = (10 ** (0.05 * freqArrayR[i])) * equaliser[i];
+      this.freqArray[i] = (10 ** (0.05 * this.freqArray[i]));
+      this.freqArrayL[i] = (10 ** (0.05 * this.freqArrayL[i])) * eq;
+      this.freqArrayR[i] = (10 ** (0.05 * this.freqArrayR[i])) * eq;
       j += 2;
     }
-    freqArray[0] = 0;
-    freqArrayL[0] = 0;
-    freqArrayR[0] = 0;
+    this.freqArray[0] = 0;
+    this.freqArrayL[0] = 0;
+    this.freqArrayR[0] = 0;
   }
 
   updateAudio (timeByteArray, timeByteArrayL, timeByteArrayR) {
@@ -120,9 +110,9 @@ export default class AudioProcessor {
     }
 
     // Use full width samples for the FFT
-    this.freqArray = this.fft.timeToFrequencyDomain(this.timeArray);
-    this.freqArrayL = this.fft.timeToFrequencyDomain(this.timeByteArraySignedL);
-    this.freqArrayR = this.fft.timeToFrequencyDomain(this.timeByteArraySignedR);
+    this.fft.timeToFrequencyDomain(this.timeArray, this.freqArray);
+    this.fft.timeToFrequencyDomain(this.timeByteArraySignedL, this.freqArrayL);
+    this.fft.timeToFrequencyDomain(this.timeByteArraySignedR, this.freqArrayR);
   }
 
   connectAudio (audionode) {

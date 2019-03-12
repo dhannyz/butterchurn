@@ -1,4 +1,5 @@
 export default class FFT {
+  /* eslint-disable no-bitwise */
   constructor (samplesIn, samplesOut, equalize = false) {
     this.samplesIn = samplesIn;
     this.samplesOut = samplesOut;
@@ -10,27 +11,36 @@ export default class FFT {
     this.real = new Float32Array(this.NFREQ);
     this.imag = new Float32Array(this.NFREQ);
     this.blank = new Float32Array(this.NFREQ);
-    this.output = new Float32Array(this.samplesOut);
 
+    this.equalizeArr = new Float32Array(this.samplesOut);
+    this.bitrevtable = new Uint16Array(this.NFREQ);
+
+    // Initialise Tables
     if (this.equalize) {
       this.initEqualizeTable();
     }
+
     this.initBitRevTable();
+
+    // Init CosSinTable
+    let dftsize = 2;
+    let tabsize = 0;
+    while (dftsize <= this.NFREQ) {
+      tabsize += 1;
+      dftsize <<= 1;
+    }
+    this.cossintable = [new Float32Array(tabsize), new Float32Array(tabsize)];
     this.initCosSinTable();
   }
 
   initEqualizeTable () {
-    this.equalizeArr = new Float32Array(this.samplesOut);
     const invHalfNFREQ = 1.0 / this.samplesOut;
     for (let i = 0; i < this.samplesOut; i++) {
       this.equalizeArr[i] = -0.02 * Math.log((this.samplesOut - i) * invHalfNFREQ);
     }
   }
 
-  /* eslint-disable no-bitwise */
   initBitRevTable () {
-    this.bitrevtable = new Uint16Array(this.NFREQ);
-
     for (let i = 0; i < this.NFREQ; i++) {
       this.bitrevtable[i] = i;
     }
@@ -56,15 +66,6 @@ export default class FFT {
 
   initCosSinTable () {
     let dftsize = 2;
-    let tabsize = 0;
-    while (dftsize <= this.NFREQ) {
-      tabsize += 1;
-      dftsize <<= 1;
-    }
-
-    this.cossintable = [new Float32Array(tabsize), new Float32Array(tabsize)];
-
-    dftsize = 2;
     let i = 0;
     while (dftsize <= this.NFREQ) {
       const theta = (-2.0 * Math.PI) / dftsize;
@@ -75,7 +76,8 @@ export default class FFT {
     }
   }
 
-  timeToFrequencyDomain (waveDataIn) {
+  /* eslint-disable no-param-reassign */
+  timeToFrequencyDomain (waveDataIn, freqDataOut) {
     this.real.set(this.blank);
     this.imag.set(this.blank);
 
@@ -117,16 +119,15 @@ export default class FFT {
 
     if (this.equalize) {
       for (let i = 0; i < this.samplesOut; i++) {
-        this.output[i] = this.equalizeArr[i] *
+        freqDataOut[i] = this.equalizeArr[i] *
                              this.sqrt((this.real[i] ** 2) + (this.imag[i] ** 2));
       }
     } else {
       for (let i = 0; i < this.samplesOut; i++) {
-        this.output[i] = this.sqrt((this.real[i] ** 2) + (this.imag[i] ** 2));
+        freqDataOut[i] = this.sqrt((this.real[i] ** 2) + (this.imag[i] ** 2));
       }
     }
-
-    return this.output; // Could merge into the processor
   }
 /* eslint-enable no-bitwise */
+/* eslint-enable no-param-reassign */
 }
