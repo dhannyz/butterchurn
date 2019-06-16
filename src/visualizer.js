@@ -212,6 +212,14 @@ export default class Visualizer {
     this.renderer.render(opts);
   }
 
+  startSampler () {
+    this.renderer.audioLevels.start();
+  }
+
+  stopSampler () {
+    this.renderer.audioLevels.stop();
+  }
+
   launchSongTitleAnim (text) {
     this.renderer.launchSongTitleAnim(text);
   }

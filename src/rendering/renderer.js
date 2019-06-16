@@ -317,18 +317,13 @@ export default class Renderer {
     this.warpColor = new Float32Array((this.mesh_width + 1) * (this.mesh_height + 1) * 4);
   }
 
-  calcTimeAndFPS (elapsedTime) {
-    let elapsed;
-    if (elapsedTime) {
-      elapsed = elapsedTime;
-    } else {
-      const newTime = performance.now();
-      elapsed = (newTime - this.lastTime) / 1000.0;
-      if (elapsed > 1.0 || elapsed < 0.0 || this.frame < 2) {
-        elapsed = 1.0 / 30.0;
-      }
-      this.lastTime = newTime;
+  calcTimeAndFPS () {
+    const newTime = performance.now();
+    let elapsed = (newTime - this.lastTime) / 1000.0;
+    if (elapsed > 1.0 || elapsed < 0.0 || this.frame < 2) {
+      elapsed = 1.0 / 30.0;
     }
+    this.lastTime = newTime;
 
     this.time += 1.0 / this.fps;
 
@@ -618,26 +613,9 @@ export default class Renderer {
                                  this.gl.TEXTURE_2D, targetTexture, 0);
   }
 
-  render ({ audioLevels, elapsedTime } = {}) {
-    this.calcTimeAndFPS(elapsedTime);
+  render () {
+    this.calcTimeAndFPS();
     this.frameNum += 1;
-
-    if (process.env.NODE_ENV !== 'production') {
-      if (audioLevels) {
-        this.audio.updateAudio(
-          audioLevels.timeByteArray,
-          audioLevels.timeByteArrayL,
-          audioLevels.timeByteArrayR
-        );
-      } else {
-        this.audio.sampleAudio();
-      }
-    }
-    if (process.env.NODE_ENV === 'production') {
-      this.audio.sampleAudio();
-    }
-
-    this.audioLevels.updateAudioLevels(this.fps, this.frameNum);
 
     const globalVars = {
       frame: this.frameNum,
