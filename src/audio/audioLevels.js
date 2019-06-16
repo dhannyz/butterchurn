@@ -4,7 +4,6 @@ export default class AudioLevels {
     this.audio = audio;
     this.freqArray = this.audio.freqArray;
     this.loop = undefined;
-    this.loopCounter = 0;
     this.fps = 30;
 
     // Set up beat detection bins
@@ -35,27 +34,14 @@ export default class AudioLevels {
   updateAudioLevels () {
     this.audio.sampleAudio();
     for (let i = 0; i < 3; i++) {
-      let rate;
       let imm = 0;
-      // Sum the range
+
+      // Calculate the Impulse
       for (let j = this.starts[i]; j < this.stops[i]; j++) {
         imm += this.freqArray[j];
       }
 
-      if (imm > this.avg[i]) {
-        rate = 0.2;
-      } else {
-        rate = 0.5;
-      }
-      this.avg[i] = (this.avg[i] * rate) + (imm * (1 - rate));
-
-      if (this.loopCounter < 50) {
-        rate = 0.9;
-      } else {
-        rate = 0.992;
-      }
-      this.longAvg[i] = (this.longAvg[i] * rate) + (imm * (1 - rate));
-
+      // Calculate Impulse Ratios
       if (this.longAvg[i] < 0.001) {
         this.val[i] = 1.0;
         this.att[i] = 1.0;
@@ -63,8 +49,15 @@ export default class AudioLevels {
         this.val[i] = imm / this.longAvg[i];
         this.att[i] = this.avg[i] / this.longAvg[i];
       }
+
+      // Recalculate Averages
+      if (imm > this.avg[i]) {
+        this.avg[i] = (this.avg[i] * 0.2) + (imm * 0.8);
+      } else {
+        this.avg[i] = 0.5 * (this.avg[i] + imm);
+      }
+      this.longAvg[i] = (this.longAvg[i] * 0.992) + (imm * 0.008);
     }
-    this.loopCounter += 1;
   }
 
   start () {
@@ -73,6 +66,5 @@ export default class AudioLevels {
 
   stop () {
     clearInterval(this.loop);
-    this.loopCounter = 0;
   }
 }
