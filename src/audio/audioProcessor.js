@@ -18,7 +18,7 @@ export default class AudioProcessor {
       // Split channels
       this.analyserL = context.createAnalyser();
       this.analyserL.smoothingTimeConstant = 0.0;
-      this.analyserL.fftSize = this.numSamps;
+      this.analyserL.fftSize = this.fftSize;
       this.analyserL.minDecibels = -100;
       this.analyserL.maxDecibels = 0;
 
@@ -49,6 +49,7 @@ export default class AudioProcessor {
       for (let i = 0; i < this.numSamps; i++) {
         this.equaliser[i] = -this.fftSize * Math.log((this.numSamps - i) / this.numSamps);
       }
+      this.equaliser[0] = 0; // Swap from -0
     }
   }
   /* eslint-disable no-bitwise */
